@@ -17,10 +17,6 @@ SHELF_ITEMS = [
     ("Cheddar Cheese",  "200 g",    "2026-05-15"),
     ("Greek Yogurt",    "500 g",    "2026-03-30"),
     ("Orange Juice",    "1.0 L",    "2026-04-10"),
-    ("Butter",          "250 g",    "2026-06-20"),
-    ("Eggs (12 pack)",  "680 g",    "2026-04-05"),
-    ("Cream Cheese",    "340 g",    "2026-04-18"),
-    ("Almond Milk",     "946 mL",   "2026-05-02"),
 ]
 
 
@@ -126,31 +122,32 @@ class ShelfScreen(tk.Frame):
         self._build()
 
     def _build(self):
+        HEADER_H = 40
+        # rowheight fills all remaining vertical space across items + heading row
+        row_h = (SCREEN_HEIGHT - HEADER_H) // (len(SHELF_ITEMS) + 1)
+
         # Header
-        header = tk.Frame(self, bg="#16213e", height=52)
+        header = tk.Frame(self, bg="#16213e", height=HEADER_H)
         header.pack(fill=tk.X)
         header.pack_propagate(False)
 
         tk.Label(
             header,
             text="SMART SHELF",
-            font=("Helvetica", 20, "bold"),
+            font=("Helvetica", 16, "bold"),
             fg="#e0e0e0",
             bg="#16213e",
-        ).pack(side=tk.LEFT, padx=12, pady=8)
+        ).pack(side=tk.LEFT, padx=10, pady=6)
 
         tk.Label(
             header,
             text="Inventory",
-            font=("Helvetica", 12),
+            font=("Helvetica", 11),
             fg="#a0a0c0",
             bg="#16213e",
-        ).pack(side=tk.RIGHT, padx=12, pady=14)
+        ).pack(side=tk.RIGHT, padx=10, pady=10)
 
-        # Table
-        table_frame = tk.Frame(self, bg="#1a1a2e")
-        table_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(4, 0))
-
+        # Table — no padding so it fills edge to edge
         style = ttk.Style()
         style.theme_use("clam")
         style.configure(
@@ -158,25 +155,24 @@ class ShelfScreen(tk.Frame):
             background="#0f3460",
             foreground="#e0e0e0",
             fieldbackground="#0f3460",
-            rowheight=33,
-            font=("Helvetica", 11),
+            rowheight=row_h,
+            font=("Helvetica", 12),
         )
         style.configure(
             "Shelf.Treeview.Heading",
             background="#e94560",
             foreground="white",
-            font=("Helvetica", 11, "bold"),
+            font=("Helvetica", 12, "bold"),
             relief="flat",
         )
         style.map("Shelf.Treeview", background=[("selected", "#533483")])
 
         columns = ("item", "weight", "expiration")
         tree = ttk.Treeview(
-            table_frame,
+            self,
             columns=columns,
             show="headings",
             style="Shelf.Treeview",
-            height=7,
         )
 
         tree.heading("item",       text="Item")
@@ -195,27 +191,6 @@ class ShelfScreen(tk.Frame):
         tree.tag_configure("even", background="#0f3460")
         tree.tag_configure("odd",  background="#162447")
         tree.pack(fill=tk.BOTH, expand=True)
-
-        # Status bar
-        status = tk.Frame(self, bg="#16213e", height=34)
-        status.pack(fill=tk.X, side=tk.BOTTOM)
-        status.pack_propagate(False)
-
-        tk.Label(
-            status,
-            text=f"Items: {len(SHELF_ITEMS)}",
-            font=("Helvetica", 11),
-            fg="#a0a0c0",
-            bg="#16213e",
-        ).pack(side=tk.LEFT, padx=12)
-
-        tk.Label(
-            status,
-            text="SLDP v0.1",
-            font=("Helvetica", 11),
-            fg="#a0a0c0",
-            bg="#16213e",
-        ).pack(side=tk.RIGHT, padx=12)
 
 
 # ---------------------------------------------------------------------------

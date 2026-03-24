@@ -5,12 +5,12 @@ import threading
 import os
 
 # UC-649 3.5" LCD resolution
-SCREEN_WIDTH = 480
+SCREEN_WIDTH  = 480
 SCREEN_HEIGHT = 320
 
-REPO_URL   = "https://github.com/minhnt1610/SLDP-48"
-REPO_NAME  = "SLDP-48"
-CLONE_DIR  = os.path.join(os.path.expanduser("~"), REPO_NAME)
+REPO_URL  = "https://github.com/minhnt1610/SLDP"
+REPO_NAME = "SLDP"
+CLONE_DIR = os.path.join(os.path.expanduser("~"), REPO_NAME)
 
 SHELF_ITEMS = [
     ("Whole Milk",      "1.89 L",   "2026-04-01"),
@@ -40,15 +40,15 @@ class SplashScreen(tk.Frame):
         tk.Label(
             self,
             text="SMART SHELF",
-            font=("Helvetica", 22, "bold"),
+            font=("Helvetica", 30, "bold"),
             fg="#e94560",
             bg="#1a1a2e",
-        ).place(relx=0.5, rely=0.28, anchor=tk.CENTER)
+        ).place(relx=0.5, rely=0.26, anchor=tk.CENTER)
 
         tk.Label(
             self,
-            text="SLDP-48",
-            font=("Helvetica", 10),
+            text="SLDP",
+            font=("Helvetica", 14),
             fg="#a0a0c0",
             bg="#1a1a2e",
         ).place(relx=0.5, rely=0.42, anchor=tk.CENTER)
@@ -57,23 +57,23 @@ class SplashScreen(tk.Frame):
         tk.Label(
             self,
             textvariable=self.status_var,
-            font=("Helvetica", 9),
+            font=("Helvetica", 12),
             fg="#e0e0e0",
             bg="#1a1a2e",
-        ).place(relx=0.5, rely=0.58, anchor=tk.CENTER)
+        ).place(relx=0.5, rely=0.59, anchor=tk.CENTER)
 
         self.progress = ttk.Progressbar(
-            self, mode="indeterminate", length=260
+            self, mode="indeterminate", length=360
         )
-        self.progress.place(relx=0.5, rely=0.70, anchor=tk.CENTER)
+        self.progress.place(relx=0.5, rely=0.73, anchor=tk.CENTER)
 
         tk.Label(
             self,
             text=REPO_URL,
-            font=("Helvetica", 7),
+            font=("Helvetica", 9),
             fg="#555577",
             bg="#1a1a2e",
-        ).place(relx=0.5, rely=0.88, anchor=tk.CENTER)
+        ).place(relx=0.5, rely=0.90, anchor=tk.CENTER)
 
     def _run_git(self):
         self.progress.start(12)
@@ -97,13 +97,13 @@ class SplashScreen(tk.Frame):
             if result.returncode == 0:
                 self._set_status("Done!")
             else:
-                self._set_status(f"Git error: {result.stderr.strip()[:60]}")
+                self._set_status(f"Git error: {result.stderr.strip()[:55]}")
         except FileNotFoundError:
             self._set_status("git not found — skipping sync")
         except subprocess.TimeoutExpired:
             self._set_status("Timeout — check network connection")
         except Exception as e:
-            self._set_status(f"Error: {str(e)[:60]}")
+            self._set_status(f"Error: {str(e)[:55]}")
 
         self.after(1200, self._finish)
 
@@ -127,29 +127,29 @@ class ShelfScreen(tk.Frame):
 
     def _build(self):
         # Header
-        header = tk.Frame(self, bg="#16213e", height=40)
+        header = tk.Frame(self, bg="#16213e", height=52)
         header.pack(fill=tk.X)
         header.pack_propagate(False)
 
         tk.Label(
             header,
             text="SMART SHELF",
-            font=("Helvetica", 14, "bold"),
+            font=("Helvetica", 20, "bold"),
             fg="#e0e0e0",
             bg="#16213e",
-        ).pack(side=tk.LEFT, padx=10, pady=6)
+        ).pack(side=tk.LEFT, padx=12, pady=8)
 
         tk.Label(
             header,
             text="Inventory",
-            font=("Helvetica", 9),
+            font=("Helvetica", 12),
             fg="#a0a0c0",
             bg="#16213e",
-        ).pack(side=tk.RIGHT, padx=10, pady=10)
+        ).pack(side=tk.RIGHT, padx=12, pady=14)
 
         # Table
         table_frame = tk.Frame(self, bg="#1a1a2e")
-        table_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=(4, 0))
+        table_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(4, 0))
 
         style = ttk.Style()
         style.theme_use("clam")
@@ -158,14 +158,14 @@ class ShelfScreen(tk.Frame):
             background="#0f3460",
             foreground="#e0e0e0",
             fieldbackground="#0f3460",
-            rowheight=28,
-            font=("Helvetica", 9),
+            rowheight=33,
+            font=("Helvetica", 11),
         )
         style.configure(
             "Shelf.Treeview.Heading",
             background="#e94560",
             foreground="white",
-            font=("Helvetica", 9, "bold"),
+            font=("Helvetica", 11, "bold"),
             relief="flat",
         )
         style.map("Shelf.Treeview", background=[("selected", "#533483")])
@@ -176,16 +176,17 @@ class ShelfScreen(tk.Frame):
             columns=columns,
             show="headings",
             style="Shelf.Treeview",
-            height=8,
+            height=7,
         )
 
         tree.heading("item",       text="Item")
         tree.heading("weight",     text="Weight / Vol.")
         tree.heading("expiration", text="Expires")
 
-        tree.column("item",       width=180, anchor=tk.W)
-        tree.column("weight",     width=110, anchor=tk.CENTER)
-        tree.column("expiration", width=140, anchor=tk.CENTER)
+        # Columns fill full 480px width
+        tree.column("item",       width=200, anchor=tk.W)
+        tree.column("weight",     width=130, anchor=tk.CENTER)
+        tree.column("expiration", width=150, anchor=tk.CENTER)
 
         for i, row in enumerate(SHELF_ITEMS):
             tag = "even" if i % 2 == 0 else "odd"
@@ -196,25 +197,25 @@ class ShelfScreen(tk.Frame):
         tree.pack(fill=tk.BOTH, expand=True)
 
         # Status bar
-        status = tk.Frame(self, bg="#16213e", height=26)
+        status = tk.Frame(self, bg="#16213e", height=34)
         status.pack(fill=tk.X, side=tk.BOTTOM)
         status.pack_propagate(False)
 
         tk.Label(
             status,
             text=f"Items: {len(SHELF_ITEMS)}",
-            font=("Helvetica", 8),
+            font=("Helvetica", 11),
             fg="#a0a0c0",
             bg="#16213e",
-        ).pack(side=tk.LEFT, padx=10)
+        ).pack(side=tk.LEFT, padx=12)
 
         tk.Label(
             status,
             text="SLDP v0.1",
-            font=("Helvetica", 8),
+            font=("Helvetica", 11),
             fg="#a0a0c0",
             bg="#16213e",
-        ).pack(side=tk.RIGHT, padx=10)
+        ).pack(side=tk.RIGHT, padx=12)
 
 
 # ---------------------------------------------------------------------------

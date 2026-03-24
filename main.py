@@ -4,10 +4,6 @@ import subprocess
 import threading
 import os
 
-# UC-649 3.5" LCD resolution
-SCREEN_WIDTH  = 800
-SCREEN_HEIGHT = 480
-
 REPO_URL  = "https://github.com/minhnt1610/SLDP"
 REPO_NAME = "SLDP"
 CLONE_DIR = os.path.join(os.path.expanduser("~"), REPO_NAME)
@@ -25,18 +21,21 @@ SHELF_ITEMS = [
 # ---------------------------------------------------------------------------
 
 class SplashScreen(tk.Frame):
-    def __init__(self, master, on_done):
-        super().__init__(master, bg="#1a1a2e",
-                         width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
+    def __init__(self, master, on_done, sw, sh):
+        super().__init__(master, bg="#1a1a2e", width=sw, height=sh)
         self.on_done = on_done
+        self.sw = sw
+        self.sh = sh
         self._build()
         self.after(100, self._run_git)
 
     def _build(self):
+        sw, sh = self.sw, self.sh
+
         tk.Label(
             self,
             text="SMART SHELF",
-            font=("Helvetica", 30, "bold"),
+            font=("Helvetica", sw // 16, "bold"),
             fg="#e94560",
             bg="#1a1a2e",
         ).place(relx=0.5, rely=0.26, anchor=tk.CENTER)
@@ -44,7 +43,7 @@ class SplashScreen(tk.Frame):
         tk.Label(
             self,
             text="SLDP",
-            font=("Helvetica", 14),
+            font=("Helvetica", sw // 36),
             fg="#a0a0c0",
             bg="#1a1a2e",
         ).place(relx=0.5, rely=0.42, anchor=tk.CENTER)
@@ -53,20 +52,20 @@ class SplashScreen(tk.Frame):
         tk.Label(
             self,
             textvariable=self.status_var,
-            font=("Helvetica", 12),
+            font=("Helvetica", sw // 44),
             fg="#e0e0e0",
             bg="#1a1a2e",
         ).place(relx=0.5, rely=0.59, anchor=tk.CENTER)
 
         self.progress = ttk.Progressbar(
-            self, mode="indeterminate", length=360
+            self, mode="indeterminate", length=int(sw * 0.72)
         )
         self.progress.place(relx=0.5, rely=0.73, anchor=tk.CENTER)
 
         tk.Label(
             self,
             text=REPO_URL,
-            font=("Helvetica", 9),
+            font=("Helvetica", sw // 72),
             fg="#555577",
             bg="#1a1a2e",
         ).place(relx=0.5, rely=0.90, anchor=tk.CENTER)
@@ -116,15 +115,18 @@ class SplashScreen(tk.Frame):
 # ---------------------------------------------------------------------------
 
 class ShelfScreen(tk.Frame):
-    def __init__(self, master):
-        super().__init__(master, bg="#1a1a2e",
-                         width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
+    def __init__(self, master, sw, sh):
+        super().__init__(master, bg="#1a1a2e", width=sw, height=sh)
+        self.sw = sw
+        self.sh = sh
         self._build()
 
     def _build(self):
-        HEADER_H = 40
-        # rowheight fills all remaining vertical space across items + heading row
-        row_h = (SCREEN_HEIGHT - HEADER_H) // (len(SHELF_ITEMS) + 1)
+        sw, sh = self.sw, self.sh
+
+        HEADER_H  = sh // 8
+        font_size = sh // 22
+        row_h     = (sh - HEADER_H) // (len(SHELF_ITEMS) + 1)
 
         # Header
         header = tk.Frame(self, bg="#16213e", height=HEADER_H)
@@ -134,20 +136,20 @@ class ShelfScreen(tk.Frame):
         tk.Label(
             header,
             text="SMART SHELF",
-            font=("Helvetica", 16, "bold"),
+            font=("Helvetica", sh // 18, "bold"),
             fg="#e0e0e0",
             bg="#16213e",
-        ).pack(side=tk.LEFT, padx=10, pady=6)
+        ).pack(side=tk.LEFT, padx=sw // 48, pady=HEADER_H // 6)
 
         tk.Label(
             header,
             text="Inventory",
-            font=("Helvetica", 11),
+            font=("Helvetica", sh // 26),
             fg="#a0a0c0",
             bg="#16213e",
-        ).pack(side=tk.RIGHT, padx=10, pady=10)
+        ).pack(side=tk.RIGHT, padx=sw // 48, pady=HEADER_H // 4)
 
-        # Table — no padding so it fills edge to edge
+        # Table
         style = ttk.Style()
         style.theme_use("clam")
         style.configure(
@@ -156,13 +158,13 @@ class ShelfScreen(tk.Frame):
             foreground="#e0e0e0",
             fieldbackground="#0f3460",
             rowheight=row_h,
-            font=("Helvetica", 12),
+            font=("Helvetica", font_size),
         )
         style.configure(
             "Shelf.Treeview.Heading",
             background="#e94560",
             foreground="white",
-            font=("Helvetica", 12, "bold"),
+            font=("Helvetica", font_size, "bold"),
             relief="flat",
         )
         style.map("Shelf.Treeview", background=[("selected", "#533483")])
@@ -179,10 +181,10 @@ class ShelfScreen(tk.Frame):
         tree.heading("weight",     text="Weight / Vol.")
         tree.heading("expiration", text="Expires")
 
-        # Columns fill full 480px width
-        tree.column("item",       width=200, anchor=tk.W)
-        tree.column("weight",     width=130, anchor=tk.CENTER)
-        tree.column("expiration", width=150, anchor=tk.CENTER)
+        # Column widths proportional to screen width
+        tree.column("item",       width=sw * 42 // 100, anchor=tk.W)
+        tree.column("weight",     width=sw * 28 // 100, anchor=tk.CENTER)
+        tree.column("expiration", width=sw * 30 // 100, anchor=tk.CENTER)
 
         for i, row in enumerate(SHELF_ITEMS):
             tag = "even" if i % 2 == 0 else "odd"
@@ -199,16 +201,22 @@ class ShelfScreen(tk.Frame):
 
 def main():
     root = tk.Tk()
-    root.title("Smart Shelf")
-    root.geometry(f"{SCREEN_WIDTH}x{SCREEN_HEIGHT}")
-    root.resizable(False, False)
+    root.attributes("-fullscreen", True)
+
+    # Read actual screen dimensions after fullscreen is applied
+    root.update_idletasks()
+    sw = root.winfo_screenwidth()
+    sh = root.winfo_screenheight()
+
+    # Press Escape to exit fullscreen
+    root.bind("<Escape>", lambda e: root.destroy())
 
     def show_shelf():
         splash.pack_forget()
-        shelf = ShelfScreen(root)
+        shelf = ShelfScreen(root, sw, sh)
         shelf.pack(fill=tk.BOTH, expand=True)
 
-    splash = SplashScreen(root, on_done=show_shelf)
+    splash = SplashScreen(root, on_done=show_shelf, sw=sw, sh=sh)
     splash.pack(fill=tk.BOTH, expand=True)
 
     root.mainloop()

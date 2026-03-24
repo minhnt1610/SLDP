@@ -5,8 +5,8 @@ import threading
 import os
 
 # UC-649 3.5" LCD resolution
-SCREEN_WIDTH  = 480
-SCREEN_HEIGHT = 320
+SCREEN_WIDTH  = 800
+SCREEN_HEIGHT = 480
 
 REPO_URL  = "https://github.com/minhnt1610/SLDP"
 REPO_NAME = "SLDP"

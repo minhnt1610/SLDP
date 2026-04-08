@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">                  <!-- character encoding -->
+  <meta name="viewport" content="width=480"> <!-- match LCD width -->
+  <title>SmartShelf</title>
+  <style>
+    /* Dark background to match the LCD display look */
+    body { background:#111; color:#eee; font-family:monospace; margin:0; padding:8px; }
+
+    /* Header bar: title on the left, clock on the right */
+    #header { display:flex; justify-content:space-between; align-items:center;
+              background:#1a1a2e; padding:6px 12px; border-radius:4px; }
+    #title  { color:#e94560; font-size:22px; font-weight:bold; }
+    #clock  { font-size:13px; color:#a0a0c0; }
+
+    /* Each shelf item is its own card */
+    .item        { background:#16213e; margin:6px 0; padding:8px 12px; border-radius:4px; }
+    .item-name   { font-size:14px; font-weight:bold; margin-bottom:4px; }
+
+    /* Weight bar: grey background, colored fill */
+    .bar-bg      { background:#333; border-radius:3px; height:10px; margin:3px 0; }
+    .bar-fill    { height:10px; border-radius:3px; transition:width 0.4s; }
+    .ok          { background:#4caf50; }   /* green when weight is fine */
+    .low         { background:#f44336; }   /* red when weight is low */
+
+    /* Small line of stats below the bar */
+    .meta        { font-size:11px; color:#aaa; }
+
+    /* NFC authentication message area */
+    #msg         { text-align:center; padding:6px; font-size:13px;
+                   color:#ffcc00; min-height:22px; }
+
+    /* Footer at the bottom */
+    #footer      { text-align:center; color:#555; font-size:10px; margin-top:8px; }
+  </style>
+</head>
+<body>
+
+<!-- Header: logo + live clock -->
+<div id="header">
+  <div id="title">SMARTSHELF</div>
+  <div id="clock">--:--:--</div>
+</div>
+
+<!-- Item cards are injected here by JavaScript -->
+<div id="items"></div>
+
+<!-- NFC tap message (e.g. "Welcome, Minh" or "Access Denied") -->
+<div id="msg"></div>
+
+<!-- Footer -->
+<div id="footer">NYU Tandon &middot; SLDP 2025</div>
+
+<script>
+  // Hardcoded fallback — shown if sensor.py is not running
+  const FALLBACK = [
+    { name:"Whole Milk",     weight:800, status:"OK",  expiry:"2026-05-01" },
+    { name:"Cheddar Cheese", weight:200, status:"OK",  expiry:"2026-05-15" },
+    { name:"Greek Yogurt",   weight: 50, status:"LOW", expiry:"2026-04-20" },
+  ];
+
+  // Maximum possible weight per item (used to scale the bar to 100%)
+  const MAX_WEIGHT = 1000;
+
+  // Build and insert HTML for each item into the #items div
+  function renderItems(data) {
+    document.getElementById("items").innerHTML = data.map(function(item) {
+      // Calculate bar fill percentage (capped at 100%)
+      var pct = Math.min(100, Math.round(item.weight / MAX_WEIGHT * 100));
+      // Choose color class based on status
+      var cls = (item.status === "LOW") ? "low" : "ok";
+      return (
+        '<div class="item">' +
+          '<div class="item-name">' + item.name + '</div>' +
+          '<div class="bar-bg"><div class="bar-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+          '<div class="meta">' + item.weight + 'g &nbsp;·&nbsp; ' + item.status +
+            ' &nbsp;·&nbsp; Exp: ' + item.expiry + '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  // Fetch live data from sensor.py; fall back to hardcoded data silently on error
+  function fetchData() {
+    fetch("http://localhost:5000/api/weights")
+      .then(function(r) { return r.json(); })        // parse the JSON response
+      .then(function(data) { renderItems(data); })   // update the display
+      .catch(function() { renderItems(FALLBACK); }); // silently use fallback
+  }
+
+  // Update the clock display every second
+  function updateClock() {
+    document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+  }
+
+  // Show fallback data immediately so the screen isn't blank on load
+  renderItems(FALLBACK);
+  fetchData();                          // then try to get live data right away
+  setInterval(fetchData,    2000);      // refresh live data every 2 seconds
+  setInterval(updateClock,  1000);      // tick the clock every second
+</script>
+</body>
+</html>

@@ -4,6 +4,8 @@ import subprocess
 import threading
 import os
 
+
+
 REPO_URL  = "https://github.com/minhnt1610/SLDP"
 REPO_NAME = "SLDP"
 CLONE_DIR = os.path.join(os.path.expanduser("~"), REPO_NAME)

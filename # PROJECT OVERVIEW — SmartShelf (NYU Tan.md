@@ -8,7 +8,9 @@ Two problems come up constantly:
 
 The SmartShelf is a laptop-sized wooden shelf that sits inside
 the dorm fridge and solves both problems using sensors, a camera,
-and a Raspberry Pi as the brain.
+and a Raspberry Pi 
+
+as the brain.
 
 ## How the full system works (team's flowchart)
 Start

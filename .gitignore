@@ -1,0 +1,3 @@
+smartshelf/logs/
+smartshelf/__pycache__/
+*.pyc

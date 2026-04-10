@@ -10,7 +10,7 @@ import database
 USE_REAL_SENSOR = False
 
 HX711_DT  = 5
-HX711_SCK = 6
+HX711_SCK = 13
 REFERENCE_UNIT = 0
 OFFSET         = 0
 

@@ -1,48 +1,45 @@
 """
-SmartShelf Display  –  targeted at the UCTRONICS 3.5" HDMI LCD (480 x 320 px)
-------------------------------------------------------------------------------
-2-tab menu navigable with mouse clicks or ← → arrow keys.
-  Tab 1 – Weight : item name / live weight in grams / LOW or OK status
-  Tab 2 – Expiry : item name / expiry date / days remaining
-
-Run from the smartshelf/ folder:
-    python display.py
-
-The display refreshes every 2 seconds automatically.
+SmartShelf Display
+------------------
+White theme, fullscreen, large fonts.
+2-tab menu: Weight | Expiry
+Navigate with mouse clicks or ← → arrow keys.
+Refreshes every 2 seconds.
 """
 
 import tkinter as tk
 from tkinter import ttk
 from datetime import date, datetime
 
-# Pull the shared ITEMS list from sensor.py.
-# Importing sensor also starts the background thread that updates weights.
 import sensor
-ITEMS = sensor.ITEMS   # same list object – live updates show up here
+ITEMS = sensor.ITEMS
 
-# ── Screen target ────────────────────────────────────────────────────────────
-# UCTRONICS 3.5" HDMI LCD: 480 × 320 pixels (landscape)
-SCREEN_W = 480
-SCREEN_H = 320
+# ── Colors – white theme ─────────────────────────────────────────────────────
+BG_PAGE   = "#ffffff"   # page background
+BG_TITLE  = "#1a73e8"   # title bar (blue)
+BG_HEADER = "#e8f0fe"   # column header row (light blue)
+BG_ROW    = "#f8f9fa"   # item row background
+BG_ROW_ALT= "#ffffff"   # alternating row background
 
-# ── Color palette ────────────────────────────────────────────────────────────
-BG_DARK   = "#1e1e2e"   # window / page background
-BG_CARD   = "#313244"   # item row background
-FG_WHITE  = "#cdd6f4"   # normal text
-FG_GREEN  = "#a6e3a1"   # OK / plenty of days left
-FG_YELLOW = "#f9e2af"   # expiring soon (≤ 7 days)
-FG_RED    = "#f38ba8"   # LOW stock / already expired
-ACCENT    = "#89b4fa"   # title + active tab + column headings
+FG_DARK   = "#1f1f1f"   # main text (near black)
+FG_HEAD   = "#1a73e8"   # column header text (blue)
+FG_GREEN  = "#188038"   # OK / plenty of days
+FG_YELLOW = "#e37400"   # expiring soon (≤ 7 days)
+FG_RED    = "#c5221f"   # LOW / expired
 
-# ── Fonts – sized for 480 × 320 so every character is easy to read ───────────
-FONT_TITLE = ("Helvetica", 16, "bold")   # "SmartShelf" title strip
-FONT_TAB   = ("Helvetica", 13, "bold")   # tab labels
-FONT_HEAD  = ("Helvetica", 11, "bold")   # column headers
-FONT_BODY  = ("Helvetica", 13)           # data rows  ← big enough to read at 3.5"
+TAB_BG       = "#e8f0fe"   # inactive tab
+TAB_SELECTED = "#1a73e8"   # active tab
+TAB_FG       = "#1a73e8"   # inactive tab text
+TAB_FG_SEL   = "#ffffff"   # active tab text
+
+# ── Fonts – deliberately oversized so user can dial them back ─────────────────
+FONT_TITLE = ("Helvetica", 36, "bold")   # main title
+FONT_TAB   = ("Helvetica", 26, "bold")   # tab labels
+FONT_HEAD  = ("Helvetica", 22, "bold")   # column headers
+FONT_BODY  = ("Helvetica", 28)           # data rows
 
 
 def days_until(expiry_str: str) -> int:
-    """Days until expiry_str (YYYY-MM-DD). Negative means already expired."""
     expiry = datetime.strptime(expiry_str, "%Y-%m-%d").date()
     return (expiry - date.today()).days
 
@@ -51,115 +48,114 @@ class SmartShelfApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("SmartShelf")
-        self.configure(bg=BG_DARK)
+        self.configure(bg=BG_PAGE)
 
-        # Lock window to the exact screen size – no scrollbars, no resizing
-        self.geometry(f"{SCREEN_W}x{SCREEN_H}")
-        self.resizable(False, False)
+        # Start fullscreen – press Escape to exit fullscreen
+        self.attributes("-fullscreen", True)
+        self.bind("<Escape>", lambda e: self.attributes("-fullscreen", False))
 
-        # ── Title strip ──────────────────────────────────────────────────────
-        title = tk.Label(
-            self,
+        # ── Title bar ────────────────────────────────────────────────────────
+        title_bar = tk.Frame(self, bg=BG_TITLE)
+        title_bar.pack(fill="x")
+        tk.Label(
+            title_bar,
             text="SmartShelf",
             font=FONT_TITLE,
-            bg=BG_DARK,
-            fg=ACCENT,
-        )
-        title.pack(pady=(6, 2))
+            bg=BG_TITLE,
+            fg="#ffffff",
+            pady=12,
+        ).pack()
 
         # ── Tab notebook ─────────────────────────────────────────────────────
         style = ttk.Style()
         style.theme_use("clam")
 
-        style.configure("TNotebook",         background=BG_DARK, borderwidth=0)
+        style.configure("TNotebook",
+                        background=BG_PAGE,
+                        borderwidth=0,
+                        tabmargins=0)
         style.configure("TNotebook.Tab",
-                        background=BG_CARD,
-                        foreground=FG_WHITE,
+                        background=TAB_BG,
+                        foreground=TAB_FG,
                         font=FONT_TAB,
-                        padding=(28, 6))      # wide padding → easy to click
+                        padding=(50, 14))
         style.map("TNotebook.Tab",
-                  background=[("selected", ACCENT)],
-                  foreground=[("selected", BG_DARK)])
+                  background=[("selected", TAB_SELECTED)],
+                  foreground=[("selected", TAB_FG_SEL)])
 
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill="both", expand=True, padx=6, pady=(2, 4))
+        self.notebook.pack(fill="both", expand=True, padx=0, pady=0)
 
         # ── Tab 1: Weight ─────────────────────────────────────────────────────
-        wf = tk.Frame(self.notebook, bg=BG_DARK)
+        wf = tk.Frame(self.notebook, bg=BG_PAGE)
         self.notebook.add(wf, text="  Weight  ")
         self._header(wf, ["Item", "Weight (g)", "Status"])
-        self.weight_rows = [self._weight_row(wf, it) for it in ITEMS]
+        self.weight_rows = [self._weight_row(wf, it, i) for i, it in enumerate(ITEMS)]
 
         # ── Tab 2: Expiry ─────────────────────────────────────────────────────
-        ef = tk.Frame(self.notebook, bg=BG_DARK)
+        ef = tk.Frame(self.notebook, bg=BG_PAGE)
         self.notebook.add(ef, text="  Expiry  ")
         self._header(ef, ["Item", "Expiry Date", "Days Left"])
-        self.expiry_rows = [self._expiry_row(ef, it) for it in ITEMS]
+        self.expiry_rows = [self._expiry_row(ef, it, i) for i, it in enumerate(ITEMS)]
 
-        # ── Keyboard navigation: ← → switch tabs ─────────────────────────────
+        # ── Keyboard navigation ───────────────────────────────────────────────
         self.bind("<Left>",  self._prev_tab)
         self.bind("<Right>", self._next_tab)
 
-        # ── Start live refresh ────────────────────────────────────────────────
         self._refresh()
 
-    # ── Tab switching ─────────────────────────────────────────────────────────
-    def _prev_tab(self, _event=None):
-        cur = self.notebook.index("current")
-        self.notebook.select(max(0, cur - 1))
+    def _prev_tab(self, _=None):
+        self.notebook.select(max(0, self.notebook.index("current") - 1))
 
-    def _next_tab(self, _event=None):
-        cur = self.notebook.index("current")
-        self.notebook.select(min(self.notebook.index("end") - 1, cur + 1))
+    def _next_tab(self, _=None):
+        self.notebook.select(min(self.notebook.index("end") - 1, self.notebook.index("current") + 1))
 
-    # ── Column header row ─────────────────────────────────────────────────────
     def _header(self, parent, labels):
-        frame = tk.Frame(parent, bg=BG_DARK)
-        frame.pack(fill="x", padx=6, pady=(4, 1))
-        weights = [3, 2, 2]   # item name column gets more space
+        frame = tk.Frame(parent, bg=BG_HEADER)
+        frame.pack(fill="x", padx=0, pady=(0, 4))
+        weights = [3, 2, 2]
         for col, (text, w) in enumerate(zip(labels, weights)):
             tk.Label(frame, text=text, font=FONT_HEAD,
-                     bg=BG_DARK, fg=ACCENT, anchor="w"
-                     ).grid(row=0, column=col, sticky="ew", padx=6)
+                     bg=BG_HEADER, fg=FG_HEAD, anchor="w", pady=10, padx=16
+                     ).grid(row=0, column=col, sticky="ew")
             frame.grid_columnconfigure(col, weight=w)
 
-    # ── Weight data row ───────────────────────────────────────────────────────
-    def _weight_row(self, parent, item):
-        card = tk.Frame(parent, bg=BG_CARD)
-        card.pack(fill="x", padx=6, pady=3)
+    def _weight_row(self, parent, item, index):
+        bg = BG_ROW if index % 2 == 0 else BG_ROW_ALT
+        card = tk.Frame(parent, bg=bg)
+        card.pack(fill="x", padx=0, pady=2)
 
-        def lbl(col, text, fg=FG_WHITE, weight=1):
+        def lbl(col, text, fg=FG_DARK, w=1):
             l = tk.Label(card, text=text, font=FONT_BODY,
-                         bg=BG_CARD, fg=fg, anchor="w", pady=6)
-            l.grid(row=0, column=col, sticky="ew", padx=8)
-            card.grid_columnconfigure(col, weight=weight)
+                         bg=bg, fg=fg, anchor="w", pady=14, padx=16)
+            l.grid(row=0, column=col, sticky="ew")
+            card.grid_columnconfigure(col, weight=w)
             return l
 
-        lbl(0, item["name"], weight=3)
-        weight_lbl = lbl(1, "--", weight=2)
-        status_lbl = lbl(2, "--", weight=2)
+        lbl(0, item["name"], w=3)
+        weight_lbl = lbl(1, "--", w=2)
+        status_lbl = lbl(2, "--", w=2)
 
         return {"weight": weight_lbl, "status": status_lbl}
 
-    # ── Expiry data row ───────────────────────────────────────────────────────
-    def _expiry_row(self, parent, item):
-        card = tk.Frame(parent, bg=BG_CARD)
-        card.pack(fill="x", padx=6, pady=3)
+    def _expiry_row(self, parent, item, index):
+        bg = BG_ROW if index % 2 == 0 else BG_ROW_ALT
+        card = tk.Frame(parent, bg=bg)
+        card.pack(fill="x", padx=0, pady=2)
 
-        def lbl(col, text, fg=FG_WHITE, weight=1):
+        def lbl(col, text, fg=FG_DARK, w=1):
             l = tk.Label(card, text=text, font=FONT_BODY,
-                         bg=BG_CARD, fg=fg, anchor="w", pady=6)
-            l.grid(row=0, column=col, sticky="ew", padx=8)
-            card.grid_columnconfigure(col, weight=weight)
+                         bg=bg, fg=fg, anchor="w", pady=14, padx=16)
+            l.grid(row=0, column=col, sticky="ew")
+            card.grid_columnconfigure(col, weight=w)
             return l
 
-        lbl(0, item["name"],   weight=3)
-        lbl(1, item["expiry"], weight=2)   # expiry date is fixed text
-        days_lbl = lbl(2, "--", weight=2)
+        lbl(0, item["name"],   w=3)
+        lbl(1, item["expiry"], w=2)
+        days_lbl = lbl(2, "--", w=2)
 
         return {"days": days_lbl}
 
-    # ── Live update – called every 2 s ────────────────────────────────────────
     def _refresh(self):
         for i, item in enumerate(ITEMS):
             # Weight tab
@@ -173,14 +169,14 @@ class SmartShelfApp(tk.Tk):
             # Expiry tab
             days = days_until(item["expiry"])
             if days < 0:
-                txt, clr = "EXPIRED", FG_RED
+                txt, clr = "EXPIRED",      FG_RED
             elif days <= 7:
                 txt, clr = f"{days}d left", FG_YELLOW
             else:
                 txt, clr = f"{days} days",  FG_GREEN
             self.expiry_rows[i]["days"].config(text=txt, fg=clr)
 
-        self.after(2000, self._refresh)   # schedule next refresh
+        self.after(2000, self._refresh)
 
 
 if __name__ == "__main__":

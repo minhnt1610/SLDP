@@ -7,12 +7,12 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import database
 
-USE_REAL_SENSOR = False
+USE_REAL_SENSOR = True
 
 HX711_DT  = 5
 HX711_SCK = 13
-REFERENCE_UNIT = 0
-OFFSET         = 0
+REFERENCE_UNIT = 106
+OFFSET         = -26624
 
 ITEMS_FILE = os.path.join(os.path.dirname(__file__), "items.json")
 _lock = threading.Lock()

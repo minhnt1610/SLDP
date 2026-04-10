@@ -26,6 +26,7 @@ ITEMS = [
     {"name": "Whole Milk",     "weight": 800, "threshold": 100, "expiry": "2026-05-01", "status": "OK"},
     {"name": "Cheddar Cheese", "weight": 200, "threshold":  50, "expiry": "2026-05-15", "status": "OK"},
     {"name": "Greek Yogurt",   "weight": 300, "threshold":  80, "expiry": "2026-04-20", "status": "OK"},
+    {"name": "Whole Chicken", "weight" : 1200, "threshold": 200, "expiry": "2026-05-30", "status": "OK"}
 ]
 
 # Create Flask app and allow index.html to fetch from localhost

@@ -387,6 +387,7 @@ class SmartShelfApp(tk.Tk):
             return
         ret, frame = self.cap.read()
         if ret:
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             w = self._cam_label.winfo_width()  or 480
             h = self._cam_label.winfo_height() or 240

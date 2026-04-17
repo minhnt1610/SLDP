@@ -5,10 +5,13 @@ White theme, fullscreen, large fonts for 480×320 LCD.
 4 tabs: Weight | Expiry | Manage | Camera
 """
 
+import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date, datetime
 import sensor
+import door
+import nfc_reader
 
 try:
     import cv2
@@ -151,9 +154,19 @@ class SmartShelfApp(tk.Tk):
         self._weight_content = None
         self._expiry_content = None
         self._manage_content = None
+        self._door_content = None
         self.cap = None
         self._cam_img = None
         self._cam_label = None
+        self._door_status_label = None
+        self._nfc_log_label = None
+
+        # ── Door / NFC setup ──────────────────────────────────────────────────
+        door.setup()
+        nfc_reader.start_polling(
+            on_valid=self._on_valid_card,
+            on_invalid=self._on_invalid_card,
+        )
 
         # ── Title bar ─────────────────────────────────────────────────────────
         tk.Frame(self, bg=BG_TITLE, height=2).pack(fill="x")
@@ -178,11 +191,13 @@ class SmartShelfApp(tk.Tk):
         self.weight_frame = tk.Frame(self.notebook, bg=BG_PAGE)
         self.expiry_frame = tk.Frame(self.notebook, bg=BG_PAGE)
         self.manage_frame = tk.Frame(self.notebook, bg=BG_PAGE)
+        self.door_frame   = tk.Frame(self.notebook, bg=BG_PAGE)
         self.camera_frame = tk.Frame(self.notebook, bg="black")
 
         self.notebook.add(self.weight_frame, text="Weight")
         self.notebook.add(self.expiry_frame, text="Expiry")
         self.notebook.add(self.manage_frame, text="Manage")
+        self.notebook.add(self.door_frame,   text="Door")
         self.notebook.add(self.camera_frame, text="Camera")
 
         self.bind("<Left>",  self._prev_tab)
@@ -192,6 +207,7 @@ class SmartShelfApp(tk.Tk):
         self._build_weight_tab()
         self._build_expiry_tab()
         self._build_manage_tab()
+        self._build_door_tab()
         self._build_camera_tab()
 
         self._refresh()
@@ -206,7 +222,7 @@ class SmartShelfApp(tk.Tk):
                                  self.notebook.index("current") + 1))
 
     def _on_tab_change(self, _=None):
-        if self.notebook.index("current") == 3:
+        if self.notebook.index("current") == 4:
             self._start_camera()
         else:
             self._stop_camera()
@@ -356,6 +372,92 @@ class SmartShelfApp(tk.Tk):
         self._build_expiry_tab()
         self._build_manage_tab()
 
+    # ── Door tab ──────────────────────────────────────────────────────────────
+
+    def _build_door_tab(self):
+        f = self.door_frame
+
+        # Door status
+        status_frame = tk.Frame(f, bg=BG_PAGE)
+        status_frame.pack(fill="x", padx=20, pady=(20, 8))
+        tk.Label(status_frame, text="Door Status:", font=FONT_HEAD,
+                 bg=BG_PAGE, fg=FG_DARK).pack(side="left")
+        self._door_status_label = tk.Label(status_frame, text="CLOSED",
+                                           font=FONT_HEAD, bg=BG_PAGE, fg=FG_GREEN)
+        self._door_status_label.pack(side="left", padx=10)
+
+        # Last NFC event
+        tk.Label(f, text="Last card scanned:", font=FONT_MANAGE,
+                 bg=BG_PAGE, fg=FG_DARK).pack(anchor="w", padx=20)
+        self._nfc_log_label = tk.Label(f, text="—", font=FONT_MANAGE,
+                                       bg=BG_PAGE, fg=FG_DARK, wraplength=440, justify="left")
+        self._nfc_log_label.pack(anchor="w", padx=20, pady=4)
+
+        # Manual override buttons
+        btn_frame = tk.Frame(f, bg=BG_PAGE)
+        btn_frame.pack(pady=20)
+        tk.Button(btn_frame, text="Open Door", font=FONT_BTN, bg=BG_ADD, fg=FG_WHITE,
+                  relief="flat", padx=24, pady=10,
+                  command=self._manual_open).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="Close Door", font=FONT_BTN, bg=BG_DEL, fg=FG_WHITE,
+                  relief="flat", padx=24, pady=10,
+                  command=self._manual_close).pack(side="left", padx=10)
+
+        # Authorised cards list
+        tk.Label(f, text="Authorised cards:", font=FONT_MANAGE,
+                 bg=BG_PAGE, fg=FG_DARK).pack(anchor="w", padx=20, pady=(16, 4))
+        self._cards_frame = tk.Frame(f, bg=BG_PAGE)
+        self._cards_frame.pack(fill="x", padx=20)
+        self._refresh_cards_list()
+
+    def _refresh_cards_list(self):
+        for w in self._cards_frame.winfo_children():
+            w.destroy()
+        cards = nfc_reader.get_cards()
+        if not cards:
+            tk.Label(self._cards_frame, text="No cards registered.",
+                     font=FONT_MANAGE, bg=BG_PAGE, fg=FG_DARK).pack(anchor="w")
+        for uid in cards:
+            row = tk.Frame(self._cards_frame, bg=BG_PAGE)
+            row.pack(fill="x", pady=2)
+            tk.Label(row, text=uid, font=FONT_MANAGE,
+                     bg=BG_PAGE, fg=FG_DARK).pack(side="left")
+            tk.Button(row, text="Remove", font=FONT_BTN, bg=BG_DEL, fg=FG_WHITE,
+                      relief="flat", padx=10, pady=4,
+                      command=lambda u=uid: self._remove_card(u)
+                      ).pack(side="right", padx=4)
+
+    def _remove_card(self, uid: str):
+        nfc_reader.remove_card(uid)
+        self._refresh_cards_list()
+
+    def _manual_open(self):
+        threading.Thread(target=door.open_door, daemon=True).start()
+        self._update_door_status()
+
+    def _manual_close(self):
+        threading.Thread(target=door.close_door, daemon=True).start()
+        self._update_door_status()
+
+    def _update_door_status(self):
+        if door.is_open():
+            self._door_status_label.config(text="OPEN", fg=FG_RED)
+        else:
+            self._door_status_label.config(text="CLOSED", fg=FG_GREEN)
+
+    def _on_valid_card(self, uid: str):
+        """Called from NFC background thread — must use after() to touch GUI."""
+        self.after(0, lambda: self._handle_valid_card(uid))
+
+    def _on_invalid_card(self, uid: str):
+        self.after(0, lambda: self._nfc_log_label.config(
+            text=f"Denied: {uid}", fg=FG_RED))
+
+    def _handle_valid_card(self, uid: str):
+        self._nfc_log_label.config(text=f"Access granted: {uid}", fg=FG_GREEN)
+        threading.Thread(target=door.toggle_door, daemon=True).start()
+        self.after(600, self._update_door_status)
+
     # ── Camera tab ────────────────────────────────────────────────────────────
 
     def _build_camera_tab(self):
@@ -381,7 +483,7 @@ class SmartShelfApp(tk.Tk):
             self.cap = None
 
     def _update_camera(self):
-        if self.notebook.index("current") != 3:
+        if self.notebook.index("current") != 4:
             return
         if not CAMERA_AVAILABLE or self.cap is None or not self.cap.isOpened():
             return
@@ -428,6 +530,7 @@ class SmartShelfApp(tk.Tk):
 
     def destroy(self):
         self._stop_camera()
+        door.cleanup()
         super().destroy()
 
 

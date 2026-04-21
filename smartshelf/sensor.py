@@ -72,17 +72,26 @@ ITEMS = _load_items()
 
 # ── Sensor setup ──────────────────────────────────────────────────────────────
 hx = None
-if USE_REAL_SENSOR:
+
+def _init_sensor():
+    global hx
+    if not USE_REAL_SENSOR:
+        return
     from HX711 import SimpleHX711, Mass
-    hx = SimpleHX711(HX711_DT, HX711_SCK, REFERENCE_UNIT, OFFSET)
-    hx.setUnit(Mass.Unit.G)
-    hx.zero()
+    _hx = SimpleHX711(HX711_DT, HX711_SCK, REFERENCE_UNIT, OFFSET)
+    _hx.setUnit(Mass.Unit.G)
+    _hx.zero()
+    hx = _hx
+
+threading.Thread(target=_init_sensor, daemon=True).start()
 
 def simulate_reading(current_weight):
     noise = random.uniform(-15, 15)
     return round(max(0, current_weight + noise), 1)
 
 def read_real_weight():
+    if hx is None:
+        return 0.0
     grams = float(hx.weight(5))
     return round(grams, 1)
 

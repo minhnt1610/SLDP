@@ -196,7 +196,9 @@ class SmartShelfApp(tk.Tk):
         title_bar = tk.Frame(self, bg=BG_TITLE)
         title_bar.pack(fill="x")
         tk.Label(title_bar, text="SmartShelf", font=FONT_TITLE,
-                 bg=BG_TITLE, fg=FG_WHITE, pady=10).pack()
+                 bg=BG_TITLE, fg=FG_WHITE, pady=10).pack(side="left", expand=True)
+        tk.Button(title_bar, text="✕", font=FONT_BTN, bg=BG_DEL, fg=FG_WHITE,
+                  relief="flat", padx=14, pady=8, command=self.destroy).pack(side="right", padx=8)
 
         # ── Notebook ──────────────────────────────────────────────────────────
         style = ttk.Style()

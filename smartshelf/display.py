@@ -649,7 +649,7 @@ class SmartShelfApp(tk.Tk):
             except Exception:
                 pass
         self._notif_frame = tk.Frame(self, bg=BG_NOTIF, bd=0)
-        self._notif_frame.place(x=0, y=72, relwidth=1.0)
+        self._notif_frame.place(x=0, rely=1.0, relwidth=1.0, anchor="sw")
         tk.Label(self._notif_frame, text=msg, font=FONT_NOTIF,
                  bg=BG_NOTIF, fg=FG_WHITE, pady=10).pack()
         self.after(4000, self._hide_notification)

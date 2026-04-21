@@ -1,11 +1,15 @@
 """Quick test for PN532 on I2C bus 20."""
 
+import time
 from adafruit_extended_bus import ExtendedI2C
 from adafruit_pn532.i2c import PN532_I2C
 
 print("Connecting to PN532 on I2C bus 20...")
 i2c = ExtendedI2C(20)
-pn532 = PN532_I2C(i2c, debug=False)
+
+time.sleep(0.5)  # give PN532 time to wake up
+
+pn532 = PN532_I2C(i2c, debug=True)
 pn532.SAM_configuration()
 print("PN532 ready!")
 print("Hold an NFC card to the reader...")

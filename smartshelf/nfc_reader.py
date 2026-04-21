@@ -74,7 +74,7 @@ def _uid_to_str(uid) -> str:
     return ":".join(f"{b:02X}" for b in uid)
 
 
-I2C_BUS = 20   # PN532 found on /dev/i2c-20
+I2C_BUS = 1    # PN532 on hardware I2C (GPIO 2/3)
 
 
 def _make_pn532():

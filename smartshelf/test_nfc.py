@@ -5,7 +5,7 @@ from adafruit_extended_bus import ExtendedI2C
 from adafruit_pn532.i2c import PN532_I2C
 
 print("Connecting to PN532 on I2C bus 20...")
-i2c = ExtendedI2C(20)
+i2c = ExtendedI2C(1)
 
 pn532 = None
 for attempt in range(5):

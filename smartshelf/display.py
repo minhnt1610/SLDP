@@ -631,9 +631,14 @@ class SmartShelfApp(tk.Tk):
 
     def _handle_weight_change(self, name: str, old_w: float, new_w: float):
         diff = new_w - old_w
-        sign = "+" if diff > 0 else ""
-        msg = f"⚠  {name}: {old_w:.0f}g → {new_w:.0f}g  ({sign}{diff:.0f}g)"
-        self._show_notification(msg)
+        if diff < 0:
+            action = "probably taken"
+            color = FG_RED
+        else:
+            action = "added"
+            color = FG_GREEN
+        msg = f"{name} {action}  ({old_w:.0f}g → {new_w:.0f}g)"
+        self._show_notification(msg, color)
         if CAMERA_AVAILABLE:
             threading.Thread(
                 target=self._capture_and_save,
@@ -643,17 +648,17 @@ class SmartShelfApp(tk.Tk):
 
     # ── Notification overlay ──────────────────────────────────────────────────
 
-    def _show_notification(self, msg: str):
-        """Show an orange banner below the title bar; auto-hides after 4 s."""
+    def _show_notification(self, msg: str, bg_color: str = BG_NOTIF):
+        """Show a banner at the bottom of the screen; auto-hides after 4 s."""
         if self._notif_frame:
             try:
                 self._notif_frame.destroy()
             except Exception:
                 pass
-        self._notif_frame = tk.Frame(self, bg=BG_NOTIF, bd=0)
+        self._notif_frame = tk.Frame(self, bg=bg_color, bd=0)
         self._notif_frame.place(x=0, rely=1.0, relwidth=1.0, anchor="sw")
         tk.Label(self._notif_frame, text=msg, font=FONT_NOTIF,
-                 bg=BG_NOTIF, fg=FG_WHITE, pady=10).pack()
+                 bg=bg_color, fg=FG_WHITE, pady=10).pack()
         self.after(4000, self._hide_notification)
 
     def _hide_notification(self):

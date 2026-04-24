@@ -102,19 +102,19 @@ def sensor_loop():
         for item in snapshot:
             old_w = item["weight"]
             new_w = read_real_weight() if USE_REAL_SENSOR else simulate_reading(old_w)
-            if abs(new_w - old_w) > 5:
+            if abs(new_w - old_w) >= 5:
                 database.log_event(item["name"], old_w, new_w)
                 for _cb in _weight_change_callbacks:
                     try:
                         _cb(item["name"], old_w, new_w)
                     except Exception:
                         pass
-            with _lock:
-                for i in ITEMS:
-                    if i["name"] == item["name"]:
-                        i["weight"] = new_w
-                        i["status"] = "LOW" if new_w < i["threshold"] else "OK"
-                        break
+                with _lock:
+                    for i in ITEMS:
+                        if i["name"] == item["name"]:
+                            i["weight"] = new_w
+                            i["status"] = "LOW" if new_w < i["threshold"] else "OK"
+                            break
         time.sleep(2)
 
 # ── Flask API ─────────────────────────────────────────────────────────────────

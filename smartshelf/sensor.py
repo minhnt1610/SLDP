@@ -80,7 +80,6 @@ def _init_sensor():
     from HX711 import SimpleHX711, Mass
     _hx = SimpleHX711(HX711_DT, HX711_SCK, REFERENCE_UNIT, OFFSET)
     _hx.setUnit(Mass.Unit.G)
-    _hx.zero()
     hx = _hx
 
 threading.Thread(target=_init_sensor, daemon=True).start()

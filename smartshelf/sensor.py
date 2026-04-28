@@ -11,7 +11,7 @@ USE_REAL_SENSOR = True
 
 HX711_DT  = 5
 HX711_SCK = 13
-REFERENCE_UNIT = -106
+REFERENCE_UNIT = 106
 OFFSET         = -26624
 
 ITEMS_FILE = os.path.join(os.path.dirname(__file__), "items.json")
@@ -100,6 +100,7 @@ def read_real_weight():
     return round(grams, 1)
 
 def sensor_loop():
+    time.sleep(4)  # wait for _init_sensor + zero() to finish before first read
     while True:
         with _lock:
             snapshot = list(ITEMS)

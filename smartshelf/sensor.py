@@ -25,22 +25,26 @@ def add_weight_change_callback(fn) -> None:
 
 # ── Persistent storage ────────────────────────────────────────────────────────
 
-def _default_items():
-    return [
-        {"name": "Whole Milk",     "weight": 800,  "threshold": 100, "expiry": "2026-05-01", "status": "OK"},
-        {"name": "Cheddar Cheese", "weight": 200,  "threshold":  50, "expiry": "2026-05-15", "status": "OK"},
-        {"name": "Greek Yogurt",   "weight": 300,  "threshold":  80, "expiry": "2026-04-20", "status": "OK"},
-        {"name": "Whole Chicken",  "weight": 1200, "threshold": 200, "expiry": "2026-05-30", "status": "OK"},
-    ]
-
 def _load_items():
     if os.path.exists(ITEMS_FILE):
         try:
             with open(ITEMS_FILE) as f:
-                return json.load(f)
+                items = json.load(f)
+            for item in items:
+                item["weight"] = 0.0
+                item["status"] = "OK"
+            return items
         except Exception:
             pass
     return _default_items()
+
+def _default_items():
+    return [
+        {"name": "Whole Milk",     "weight": 0, "threshold": 100, "expiry": "2026-05-01", "status": "OK"},
+        {"name": "Cheddar Cheese", "weight": 0, "threshold":  50, "expiry": "2026-05-15", "status": "OK"},
+        {"name": "Greek Yogurt",   "weight": 0, "threshold":  80, "expiry": "2026-04-20", "status": "OK"},
+        {"name": "Whole Chicken",  "weight": 0, "threshold": 200, "expiry": "2026-05-30", "status": "OK"},
+    ]
 
 def save_items():
     with open(ITEMS_FILE, "w") as f:

@@ -91,7 +91,7 @@ def simulate_reading(current_weight):
 def read_real_weight():
     if hx is None:
         return 0.0
-    grams = float(hx.weight(5))
+    grams = float(hx.weight(1))
     return round(grams, 1)
 
 def _process_weight_change(item, new_w):

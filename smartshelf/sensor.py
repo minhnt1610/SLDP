@@ -91,8 +91,11 @@ def simulate_reading(current_weight):
 def read_real_weight():
     if hx is None:
         return 0.0
-    grams = float(hx.weight(1))
-    return round(grams, 1)
+    try:
+        grams = float(hx.weight(3))
+        return round(grams, 1)
+    except Exception:
+        return 0.0
 
 def _process_weight_change(item, new_w):
     old_w = item["weight"]
@@ -113,6 +116,7 @@ def _process_weight_change(item, new_w):
 
 
 def sensor_loop():
+    time.sleep(5)  # let Tkinter window open before sensor reads begin
     while True:
         with _lock:
             snapshot = list(ITEMS)

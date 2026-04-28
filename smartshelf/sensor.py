@@ -94,26 +94,39 @@ def read_real_weight():
     grams = float(hx.weight(5))
     return round(grams, 1)
 
+def _process_weight_change(item, new_w):
+    old_w = item["weight"]
+    if abs(new_w - old_w) < 5:
+        return
+    database.log_event(item["name"], old_w, new_w)
+    for _cb in _weight_change_callbacks:
+        try:
+            _cb(item["name"], old_w, new_w)
+        except Exception:
+            pass
+    with _lock:
+        for i in ITEMS:
+            if i["name"] == item["name"]:
+                i["weight"] = new_w
+                i["status"] = "LOW" if new_w < i["threshold"] else "OK"
+                break
+
+
 def sensor_loop():
     while True:
         with _lock:
             snapshot = list(ITEMS)
-        for item in snapshot:
-            old_w = item["weight"]
-            new_w = read_real_weight() if USE_REAL_SENSOR else simulate_reading(old_w)
-            if abs(new_w - old_w) >= 5:
-                database.log_event(item["name"], old_w, new_w)
-                for _cb in _weight_change_callbacks:
-                    try:
-                        _cb(item["name"], old_w, new_w)
-                    except Exception:
-                        pass
-                with _lock:
-                    for i in ITEMS:
-                        if i["name"] == item["name"]:
-                            i["weight"] = new_w
-                            i["status"] = "LOW" if new_w < i["threshold"] else "OK"
-                            break
+
+        if USE_REAL_SENSOR:
+            # One physical scale — read once and apply to the first item only
+            if snapshot:
+                new_w = read_real_weight()
+                _process_weight_change(snapshot[0], new_w)
+        else:
+            for item in snapshot:
+                new_w = simulate_reading(item["weight"])
+                _process_weight_change(item, new_w)
+
         time.sleep(2)
 
 # ── Flask API ─────────────────────────────────────────────────────────────────
